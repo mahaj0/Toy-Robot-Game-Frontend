@@ -1,22 +1,18 @@
-// Import necessary libraries
+// Import the readline module
 const readline = require('readline');
 
-// Initialize board and robot variables
-let board = [];
+// Create a 5x5 board filled with undefined values and a null robot
+let board = Array.from({length: 5}, () => Array(5).fill(undefined));
 let robot = null;
 
-console.log('Starting program...');
-// your program code here
-
-// Initialize readline interface for user input
+// Create a readline interface with the standard input and output
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
-// Function to handle user commands
+// Function to handle user commands entered in the terminal
 function handleCommand(input) {
-  console.log(`User input: ${input}`);
   const command = input.split(',');
   switch (command[0]) {
     case 'PLACE_ROBOT':
@@ -47,129 +43,75 @@ function handleCommand(input) {
   }
 }
 
-// Function to place robot on board
+// Function to place the robot on the board at the specified row, column, and facing direction
 function placeRobot(row, col, facing) {
   if (isValidCoord(row, col) && isValidFacing(facing)) {
-    robot = {
-      row: row,
-      col: col,
-      facing: facing
-    };
+    robot = { row, col };
+    robot.facing = facing;
   }
 }
 
-// Function to place wall on board
+// Function to place a wall on the board at the specified row and column
 function placeWall(row, col) {
   if (isValidCoord(row, col) && isEmpty(row, col)) {
     board[row-1][col-1] = 'X';
   }
 }
 
-// Function to move robot forward
+// Function to move the robot one space in its current facing direction
 function moveRobot() {
   if (robot) {
-    let newRow = robot.row;
-    let newCol = robot.col;
-    switch (robot.facing) {
-      case 'NORTH':
-        newRow++;
-        break;
-      case 'SOUTH':
-        newRow--;
-        break;
-      case 'EAST':
-        newCol++;
-        break;
-      case 'WEST':
-        newCol--;
-        break;
-    }
-    if (isValidCoord(newRow, newCol) && isEmpty(newRow, newCol)) {
-      robot.row = newRow;
-      robot.col = newCol;
-    } else {
-      wrapRobot();
+    let newRow = robot.row + (robot.facing === 'NORTH' ? 1 : robot.facing === 'SOUTH' ? -1 : 0);
+    let newCol = robot.col + (robot.facing === 'EAST' ? 1 : robot.facing === 'WEST' ? -1 : 0);
+    if (isEmpty(newRow, newCol)) {
+      if (isValidCoord(newRow, newCol)) {
+        robot.row = newRow;
+        robot.col = newCol;
+      } else {
+        if (newRow > 5) newRow = 1;
+        if (newRow < 1) newRow = 5;
+        if (newCol > 5) newCol = 1;
+        if (newCol < 1) newCol = 5;
+        robot.row = newRow;
+        robot.col = newCol;
+      }
     }
   }
 }
 
-// Function to turn robot left or right
+// This function receives a direction value as an argument and rotates the robot in that direction if it exists.
 function turnRobot(direction) {
   if (robot) {
     const facings = ['NORTH', 'EAST', 'SOUTH', 'WEST'];
-    const index = facings.indexOf(robot.facing);
-    const newIndex = (index + direction + facings.length) % facings.length;
-    robot.facing = facings[newIndex];
+    const currentFacingIndex = facings.indexOf(robot.facing);
+    const newFacingIndex = (currentFacingIndex + direction + 4) % 4;
+    robot.facing = facings[newFacingIndex];
   }
 }
 
-// Function to report current robot position and facing direction
+// This function logs the current position of the robot and indicate that there is no robot on the board
 function report() {
-  if (robot) {
-    console.log(`${robot.row},${robot.col},${robot.facing}`);
-  }
+  console.log(robot ? `${robot.row},${robot.col},${robot.facing}` : 'No robot on the board');
 }
 
-// Function to check if coordinates are valid
+// This function checks if a board position is empty (i.e., undefined)
+function isEmpty(row, col) {
+  return board[row-1][col-1] === undefined && (!robot || robot.row !== row || robot.col !== col);
+}
+
+// This function checks if a given row and column value are within the bounds of the 5x5 board.
 function isValidCoord(row, col) {
   return row >= 1 && row <= 5 && col >= 1 && col <= 5;
 }
 
-// Function to check if facing direction is valid
+// This function checks if a given facing value is one of the valid facing directions.
 function isValidFacing(facing) {
-  const validFacings = ['NORTH', 'SOUTH', 'EAST', 'WEST'];
+  const validFacings = ['NORTH', 'EAST', 'SOUTH', 'WEST'];
   return validFacings.includes(facing);
 }
 
-// Function to check if board location is empty
-function isEmpty(row, col) {
-  return board[row-1][col-1] === undefined;
-}
-// Function to wrap robot to other side of board if it moves off the edge
-function wrapRobot() {
-    let newRow = robot.row;
-    let newCol = robot.col;
-    switch (robot.facing) {
-    case 'NORTH':
-    newRow = 1;
-    break;
-    case 'SOUTH':
-    newRow = 5;
-    break;
-    case 'EAST':
-    newCol = 1;
-    break;
-    case 'WEST':
-    newCol = 5;
-    break;
-    }
-    if (isEmpty(newRow, newCol)) {
-    robot.row = newRow;
-    robot.col = newCol;
-    }
-    }
-    
-    // Function to initialize board with empty spaces
-    function initializeBoard() {
-    for (let i = 0; i < 5; i++) {
-    board[i] = [];
-    for (let j = 0; j < 5; j++) {
-    board[i][j] = undefined;
-    }
-    }
-    }
-    
-    // Function to start the program
-    function start() {
-      initializeBoard();
-      rl.on('line', (input) => {
-        handleCommand(input);
-        rl.prompt();
-      });
-      rl.prompt();
-    }
-    
-    rl.question('Enter a command: ', (input) => {
-      handleCommand(input);
-      rl.prompt();
-    });  
+rl.on('line', handleCommand);
+
+// The console outputs instructions for the user to enter commands or exit the program.
+console.log('Enter commands to control the robot, or type "exit" to quit.');
+
